@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Data Harvester</title>
+  <style>
+    :root {
+      --bg: #f0f9ff;
+      --card-bg: #ffffff;
+      --border: #e0e7ff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #0ea5e9;
+      --accent-hover: #0284c7;
+      --success: #10b981;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      max-width: 900px;
+      margin: 48px auto;
+      padding: 0 20px;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 4px;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-top: 24px;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    }
+
+    label {
+      display: block;
+      margin-top: 16px;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text);
+    }
+    label:first-child { margin-top: 0; }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.15s ease;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    button:hover { background: var(--accent-hover); }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #result {
+      margin-top: 16px;
+      white-space: pre-wrap;
+      background: #f1f5f9;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    #result:empty { display: none; }
+    #result.success { background: #d1fae5; color: var(--success); }
+
+    table {
+      width: 100%;
+      margin-top: 0;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    th {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      background: #f8fafc;
+    }
+    tbody tr:hover { background: #f8fafc; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .empty-row td {
+      color: var(--muted);
+      text-align: center;
+      padding: 32px 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-alert { background: #fee2e2; color: #dc2626; }
+    .badge-state_alert { background: #fef3c7; color: #d97706; }
+    .badge-forecast { background: #dbeafe; color: #2563eb; }
+    .badge-hourly_forecast { background: #d1fae5; color: #059669; }
+    .badge-discussion { background: #e0e7ff; color: #6366f1; }
+
+    .narrative {
+      max-width: 400px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <h1>🌤️ Weather Data Harvester</h1>
+  <p class="hint">Enter locations (city, state) separated by semicolons. Example: Chicago, IL; Austin, TX; Miami, FL</p>
+
+  <div class="card">
+    <form id="weather-form">
+      <label for="locations">Locations (semicolon-separated)</label>
+      <input 
+        type="text" 
+        id="locations" 
+        name="locations" 
+        placeholder="Chicago, IL; Austin, TX; Miami, FL" 
+        required>
+      <button type="submit">🌍 Fetch Weather Data</button>
+    </form>
+
+    <div id="result"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top: 0; font-size: 18px; margin-bottom: 8px;">🔍 Semantic Search</h2>
+    <p class="hint" style="margin-top: 0;">Search weather documents by meaning (e.g., "flooding risk near rivers", "tornado warning")</p>
+    
+    <form id="search-form">
+      <label for="search-query">Search Query</label>
+      <input 
+        type="text" 
+        id="search-query" 
+        name="search-query" 
+        placeholder="e.g., risk of flooding near rivers" 
+        required>
+      
+      <label for="top-k" style="margin-top: 12px;">Results to return (1-20)</label>
+      <input 
+        type="number" 
+        id="top-k" 
+        name="top-k" 
+        value="5" 
+        min="1" 
+        max="20"
+        style="width: 120px; padding: 12px 14px; margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;">
+      
+      <button type="submit">🔎 Search</button>
+    </form>
+
+    <div id="search-result"></div>
+    <div id="search-results-container" style="margin-top: 24px;"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top: 0; font-size: 18px; margin-bottom: 16px;">📊 Weather Documents</h2>
+    <table id="weather-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Location</th>
+          <th>Coordinates</th>
+          <th>Headline</th>
+          <th>Narrative Preview</th>
+          <th>Issued</th>
+        </tr>
+      </thead>
+      <tbody id="weather-body"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const form = document.getElementById("weather-form");
+    const resultEl = document.getElementById("result");
+    const weatherBody = document.getElementById("weather-body");
+
+    async function loadWeather() {
+      try {
+        const resp = await fetch("/weather?limit=50");
+        const data = await resp.json();
+        if (!resp.ok) {
+          console.error("Error loading weather:", data.error || resp.statusText);
+          return;
+        }
+        weatherBody.innerHTML = "";
+
+        if (!data.length) {
+          const emptyTr = document.createElement("tr");
+          emptyTr.className = "empty-row";
+          emptyTr.innerHTML = `<td colspan="6">No weather data yet. Add locations above to get started.</td>`;
+          weatherBody.appendChild(emptyTr);
+          return;
+        }
+
+        data.forEach((row) => {
+          const tr = document.createElement("tr");
+          const badgeClass = `badge-${row.source_type || 'forecast'}`;
+          const issued = row.issued_at ? new Date(row.issued_at).toLocaleString() : "-";
+          const narrative = row.narrative_text || "";
+          const preview = narrative.substring(0, 80) + (narrative.length > 80 ? "..." : "");
+          const coords = row.latitude && row.longitude 
+            ? `${row.latitude.toFixed(4)}, ${row.longitude.toFixed(4)}` 
+            : "-";
+          
+          tr.innerHTML = `
+            <td><span class="badge ${badgeClass}">${row.source_type || 'forecast'}</span></td>
+            <td>${row.location || "-"}</td>
+            <td style="font-size: 12px; color: var(--muted);">${coords}</td>
+            <td><strong>${row.headline || "-"}</strong></td>
+            <td class="narrative">${preview}</td>
+            <td>${issued}</td>
+          `;
+          weatherBody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Failed to load weather:", err);
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const locationsInput = document.getElementById("locations").value;
+      const locations = locationsInput.split(";").map(l => l.trim()).filter(l => l);
+      
+      resultEl.className = "";
+      resultEl.textContent = `⏳ Fetching weather for ${locations.length} location(s)...`;
+      
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
+      try {
+        const resp = await fetch("/weather/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locations }),
+        });
+        const data = await resp.json();
+        
+        if (!resp.ok) {
+          resultEl.textContent = "❌ Error: " + (data.error || resp.statusText);
+          submitBtn.disabled = false;
+          return;
+        }
+        
+        resultEl.className = "success";
+        resultEl.textContent = `✅ Success! Harvested ${data.synced} weather documents from ${data.locations.length} location(s).`;
+        document.getElementById("locations").value = "";
+        loadWeather();
+      } catch (err) {
+        resultEl.textContent = "❌ Request failed: " + err;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Load initial weather data
+    loadWeather();
+
+    // Semantic search handler
+    const searchForm = document.getElementById("search-form");
+    const searchResultEl = document.getElementById("search-result");
+    const searchResultsContainer = document.getElementById("search-results-container");
+
+    searchForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const query = document.getElementById("search-query").value.trim();
+      const topK = parseInt(document.getElementById("top-k").value);
+      
+      searchResultEl.className = "";
+      searchResultEl.textContent = `⌛ Searching for: "${query}"...`;
+      searchResultsContainer.innerHTML = "";
+      
+      const searchBtn = searchForm.querySelector('button[type="submit"]');
+      searchBtn.disabled = true;
+
+      try {
+        const resp = await fetch("/weather/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, top_k: topK }),
+        });
+        const data = await resp.json();
+        
+        if (!resp.ok) {
+          searchResultEl.textContent = "❌ Error: " + (data.error || resp.statusText);
+          searchBtn.disabled = false;
+          return;
+        }
+        
+        if (!data.results || data.results.length === 0) {
+          searchResultEl.className = "";
+          searchResultEl.textContent = data.message || "No results found. Make sure embeddings are populated.";
+          searchBtn.disabled = false;
+          return;
+        }
+        
+        // Display success message
+        searchResultEl.className = "success";
+        searchResultEl.textContent = `✅ Found ${data.count} result(s)`;
+        
+        // Display results
+        searchResultsContainer.innerHTML = data.results.map((result, idx) => {
+          const similarity = (result.similarity * 100).toFixed(1);
+          const similarityColor = result.similarity > 0.7 ? '#10b981' : result.similarity > 0.5 ? '#f59e0b' : '#64748b';
+          
+          return `
+            <div style="
+              border: 1px solid var(--border);
+              border-radius: 8px;
+              padding: 16px;
+              margin-bottom: 12px;
+              background: #fafbfc;
+            ">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                <div>
+                  <strong style="font-size: 15px; color: var(--text);">#${idx + 1}: ${result.location || 'Unknown'}</strong>
+                  <div style="color: var(--muted); font-size: 12px; margin-top: 4px;">${result.headline || 'No headline'}</div>
+                </div>
+                <div style="
+                  background: ${similarityColor};
+                  color: white;
+                  padding: 6px 12px;
+                  border-radius: 6px;
+                  font-size: 13px;
+                  font-weight: 600;
+                  white-space: nowrap;
+                ">
+                  ${similarity}% match
+                </div>
+              </div>
+              
+              <div style="
+                background: white;
+                padding: 12px;
+                border-radius: 6px;
+                font-size: 13px;
+                line-height: 1.6;
+                color: var(--text);
+                margin-top: 12px;
+                border-left: 3px solid ${similarityColor};
+              ">
+                ${result.chunk_text || result.narrative_text || 'No content'}
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+      } catch (err) {
+        searchResultEl.textContent = "❌ Request failed: " + err;
+      } finally {
+        searchBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

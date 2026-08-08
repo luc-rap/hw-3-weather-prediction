@@ -1,0 +1,8 @@
+# Weather MCP Server Dependencies
+# Minimal dependencies for the MCP server (no Flask, no DB drivers)
+
+fastmcp>=0.1.0
+requests>=2.32.3
+databricks-sdk>=0.30.0
+uvicorn>=0.30.0
+starlette>=0.37.0

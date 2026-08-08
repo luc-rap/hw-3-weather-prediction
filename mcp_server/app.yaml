@@ -1,0 +1,12 @@
+# Weather MCP Server App Configuration
+# Deploy this as a separate Databricks App from the dashboard
+
+command:
+  - "python"
+  - "weather_mcp_server.py"
+
+env:
+  # MCP server doesn't need Lakebase access - it's stateless
+  # Add environment variables here if needed for future enhancements
+  - name: LOG_LEVEL
+    value: "INFO"
