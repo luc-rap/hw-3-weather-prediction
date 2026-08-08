@@ -27,7 +27,7 @@ def _get_session() -> requests.Session:
         _session = requests.Session()
         _session.headers.update(
             {
-                "User-Agent": "(Databricks Weather MCP, lucia.rapanova@gmail.com)",
+                "User-Agent": "(Databricks Weather MCP, student@gmail.com)",
                 "Accept": "application/geo+json",
             }
         )
@@ -85,7 +85,7 @@ def _parse_location(location: str) -> tuple[float, float]:
                 "countrycodes": "us",  # Limit to US for weather.gov compatibility
             },
             headers={
-                "User-Agent": "(Databricks Weather MCP, lucia.rapanova@gmail.com)"
+                "User-Agent": "(Databricks Weather MCP, student@gmail.com)"
             },
             timeout=10,
         )
